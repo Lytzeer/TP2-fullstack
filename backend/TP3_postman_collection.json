@@ -1,0 +1,341 @@
+{
+  "info": {
+    "name": "TP Séance 3 - API Users",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "createdUserId", "value": "" },
+    { "key": "persistenceUserId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "4.1 - Flux CRUD",
+      "item": [
+        {
+          "name": "1. GET /api/users (count: 3 après seed)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('count >= 3', () => pm.expect(body.count).to.be.at.least(3));",
+                  "pm.test('data est un tableau', () => pm.expect(body.data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. POST /api/users (créer utilisateur)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"role\": \"user\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('data._id présent', () => pm.expect(body.data._id).to.exist);",
+                  "pm.collectionVariables.set('createdUserId', body.data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. GET /api/users/:_id (utilisateur créé)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{createdUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('data.name: Test User', () => pm.expect(body.data.name).to.equal('Test User'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. PUT /api/users/:_id (modifier nom)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users/{{createdUserId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User Modifié\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('nom modifié', () => pm.expect(body.data.name).to.equal('Test User Modifié'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. GET /api/users (count: 4)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('count >= 4', () => pm.expect(body.count).to.be.at.least(4));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6. DELETE /api/users/:_id (204)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/users/{{createdUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                  "pm.test('corps vide', () => pm.expect(pm.response.text()).to.equal(''));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. GET /api/users/:_id (404 après suppression)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{createdUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: false', () => pm.expect(body.success).to.be.false);",
+                  "pm.test('message: non trouvé', () => pm.expect(body.message).to.include('trouvé'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4.2 - Cas d'erreur",
+      "item": [
+        {
+          "name": "POST email déjà existant → 409",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate User\",\n  \"email\": \"duplicate-test@example.com\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.sendRequest({",
+                  "  url: pm.collectionVariables.get('baseUrl') + '/api/users',",
+                  "  method: 'POST',",
+                  "  header: { 'Content-Type': 'application/json' },",
+                  "  body: { mode: 'raw', raw: JSON.stringify({ name: 'Duplicate User', email: 'duplicate-test@example.com' }) }",
+                  "}, (err, res) => {});",
+                  "// On insère une première fois pour garantir l'existence de l'email"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: false', () => pm.expect(body.success).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET id invalide '123' → 400",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/123"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: false', () => pm.expect(body.success).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET ObjectId valide mais inexistant → 404",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/000000000000000000000000"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: false', () => pm.expect(body.success).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT id invalide → 400",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users/123",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: false', () => pm.expect(body.success).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE id invalide → 400",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/users/123"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: false', () => pm.expect(body.success).to.be.false);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4.3 - Persistance",
+      "item": [
+        {
+          "name": "1. POST /api/users (noter l'_id)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Persistance User\",\n  \"email\": \"persistance@example.com\",\n  \"role\": \"user\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('persistenceUserId', body.data._id);",
+                  "console.log('_id à noter:', body.data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. GET /api/users/:_id (après redémarrage serveur)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/users/{{persistenceUserId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 - données persistées', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('success: true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('nom correct', () => pm.expect(body.data.name).to.equal('Persistance User'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

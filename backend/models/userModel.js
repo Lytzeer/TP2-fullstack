@@ -1,34 +1,30 @@
-const users = require("../data/users");
+const mangoose = require("mongoose");
+const { Schema } = mangoose;
 
-const getAll = () => users;
+const userSchema = new Schema({
+  name: String,
+  email: { type: String, unique: true },
+  role: { type: String, default: "user" },
+  createdAt: { type: Date, default: Date.now },
+});
 
-const getById = (id) => users.find((u) => u.id === id);
+const User = mangoose.model("User", userSchema);
+
+const getAll = () => User.find();
+
+const getById = (id) => User.findById(id);
 
 const create = (data) => {
-  const newUser = {
-    id: users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1,
-    name: data.name,
-    email: data.email,
-    role: data.role || "user",
-    createdAt: new Date().toISOString().split("T")[0],
-  };
-  users.push(newUser);
+  const newUser = new User(data);
   return newUser;
 };
 
 const update = (id, data) => {
-  const index = users.findIndex((u) => u.id === id);
-  if (index === -1) return null;
-  const { id: _id, createdAt: _createdAt, ...allowed } = data;
-  users[index] = { ...users[index], ...allowed };
-  return users[index];
+  return User.findByIdAndUpdate(id, data, { new: true });
 };
 
 const remove = (id) => {
-  const index = users.findIndex((u) => u.id === id);
-  if (index === -1) return false;
-  users.splice(index, 1);
-  return true;
+  return User.findByIdAndDelete(id);
 };
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { getAll, getById, create, update, remove, User };
